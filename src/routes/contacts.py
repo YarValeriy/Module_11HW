@@ -9,7 +9,15 @@ from datetime import datetime, timedelta, date
 router = APIRouter(prefix='/contacts', tags=["contacts"])
 
 
-# Define API endpoints
+# Select the contacts with birthdate in the next 7 days
+@router.get("/birthdays", response_model=List[ContactResponse])
+async def get_birthdays(db: Session = Depends(get_db)):
+    today = datetime.now().date()
+    end_date = today + timedelta(days=7)
+    birthdays = await repository_contacts.get_birthdays(today, end_date, db)
+    return birthdays
+
+
 @router.post("/", response_model=ContactCreate)
 async def create_contact(contact: ContactCreate, db: Session = Depends(get_db)):
     return await repository_contacts.create_contact(contact, db)
@@ -41,16 +49,8 @@ async def delete_contact(contact_id: int, db: Session = Depends(get_db)):
 
 @router.get("/", response_model=List[ContactResponse])
 async def get_contacts(
-        name: str = None, surname: str = None, email: str = None, phone: str = None, birthday: date = None, db: Session = Depends(get_db)
+        name: str = None, surname: str = None, email: str = None, phone: str = None, birthday: date = None,
+        db: Session = Depends(get_db)
 ):
     contacts = await repository_contacts.get_contacts(name, surname, email, phone, birthday, db)
     return contacts
-
-
-# Select the contacts with birthdate in the next 7 days
-@router.get("/birthdays", response_model=List[ContactResponse])
-async def get_birthdays(db: Session = Depends(get_db)):
-    today = datetime.now().date()
-    end_date = today + timedelta(days=7)
-    birthdays = await repository_contacts.get_birthdays(today, end_date, db)
-    return birthdays
