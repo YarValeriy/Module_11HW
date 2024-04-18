@@ -1,11 +1,10 @@
-from datetime import date, datetime
-
 from fastapi import Depends
 from sqlalchemy.orm import Session
-
 from src.database.db import get_db
 from src.database.models import Contact
 from src.schemas import ContactCreate, ContactUpdate
+from datetime import date
+from sqlalchemy import extract
 
 
 # Create a new contact in the database
@@ -45,7 +44,22 @@ async def delete_contact(contact_id: int, db: Session):
     return {"message": "Contact deleted successfully"}
 
 
-# Search for contacts by name, surname, or email
+async def get_birthdays(start_date, end_date, db):
+    return db.query(Contact).filter(Contact.birthday.between(start_date, end_date)).all()
+
+
+async def get_birthdays(start_date: date, end_date: date, db: Session):
+    month = extract('month', Contact.birthday)
+    day = extract('day', Contact.birthday)
+    contacts = db.query(Contact).filter(
+        (month == start_date.month) &
+        (day >= start_date.day) &
+        (day <= end_date.day)
+    ).all()
+    return contacts
+
+
+# Search for contacts by name, surname, email or phone
 async def get_contacts(
         name, surname, email, phone, birthday, db
 ):
@@ -61,8 +75,3 @@ async def get_contacts(
     if birthday:
         query = query.filter(Contact.birthday == birthday)
     return query.all()
-
-
-async def get_birthdays(start_date, end_date, db):
-    return db.query(Contact).filter(Contact.birthday.between(start_date, end_date)).all()
-
